@@ -2,6 +2,7 @@
 #define MFT_FEATURE_TRACKHER_HPP
 
 #include <vector>
+#include <numeric>
 #include <opencv2/opencv.hpp>
 #include <yaml-cpp/yaml.h>
 
@@ -13,6 +14,7 @@ struct FeatureTrackerParams {
     // Detection params
     int init_fast_threshold = 15;
     int min_fast_threshold = 5;
+    int minimum_distance = 25;
 
     // Tracking params
     int window_size = 7;
@@ -29,6 +31,15 @@ struct FeatureTrackerParams {
 struct Camera {
     cv::Mat K;
     cv::Mat D;
+
+    double fx;
+    double fy;
+
+    double cx;
+    double cy;
+
+    int width;
+    int height;
 };
 
 class FeatureTracker {
@@ -36,10 +47,15 @@ public:
     FeatureTracker();
     FeatureTracker(std::string path_to_config);
 
-    std::pair<std::vector<uint64_t>, std::vector<cv::Point2f>>
+    std::vector<cv::Point2f>
     detectFeatures(
         const cv::Mat& img,
         const std::vector<cv::Point2f>& prev_pts = std::vector<cv::Point2f>());
+    
+    std::vector<uint64_t>
+    assignFeatureIds(
+        const std::vector<cv::Point2f>& pts,
+        const uint64_t last_id);
 
     std::pair<std::vector<uint64_t>, std::vector<cv::Point2f>>
     trackFeatures(
@@ -53,9 +69,10 @@ public:
         const Camera& cam);
 
 private:
+    uint64_t id_counter_;
 
 };
 
-}
+} // namespace mft
 
 #endif
