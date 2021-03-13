@@ -6,7 +6,14 @@
 #include <opencv2/opencv.hpp>
 #include <yaml-cpp/yaml.h>
 
+#include "MFT/utils.hpp"
+
 namespace mft {
+
+    /**
+     * Note: Wanted this to be functional, ended up with an odd 
+     * impure-functional style thing
+     */
 
 struct FeatureTrackerParams {
     int num_features = 200;
@@ -19,9 +26,6 @@ struct FeatureTrackerParams {
     // Tracking params
     int window_size = 7;
     int num_levels = 3;
-    double min_eig_threshold = 0.003;
-    int max_iterations = 30;
-    double precision = 0.01;
 
     // Ransac params
     double ransac_pix_threshold = 1.0;
@@ -42,27 +46,64 @@ struct Camera {
     int height;
 };
 
+struct Frame {
+    cv::Mat img;
+    std::vector<uint64_t> ids;
+    std::vector<cv::Point2f> points;
+    std::vector<cv::Point2f> points_und;
+    std::vector<uint64_t> ages;
+    std::vector<double> velocities;
+};
+
 class FeatureTracker {
 public:
     FeatureTracker();
     FeatureTracker(std::string path_to_config);
 
-    std::vector<cv::Point2f>
-    detectFeatures(
+    /**
+     * If no previous frames to track features from, build a frame and 
+     * detect features in it
+     * 
+     * Input: Image to build frame from, camera
+     * Output: Frame with features detected in it
+     */ 
+    Frame
+    buildFirstFrame(
         const cv::Mat& img,
-        const std::vector<cv::Point2f>& prev_pts = std::vector<cv::Point2f>());
-    
-    std::vector<uint64_t>
-    assignFeatureIds(
-        const std::vector<cv::Point2f>& pts,
-        const uint64_t last_id);
+        const Camera& cam);
 
-    std::pair<std::vector<uint64_t>, std::vector<cv::Point2f>>
+    /**
+     * If a previous frame exists, track features from it then detect more
+     * if needed
+     * 
+     * Input: Image to build frame from, camera, previous frame
+     * Outout: Frame with tracked and detected features
+     */ 
+    Frame buildNextFrame(
+        const cv::Mat& img,
+        const Camera& cam,
+        const Frame& prev_frame);
+
+    /**
+     * Input: Any frame
+     * Output: Same frame with new features detected, along with updated info
+     */ 
+    void
+    extractFeatures(
+        Frame& f,
+        const Camera& cam);
+
+    /**
+     * Input: New frame with only img field populated
+     * Output: Frame with features tracked from previous frame, no new features
+     */ 
+    void
     trackFeatures(
-        const std::vector<cv::Point2f>& prev_pts,
-        const cv::Mat& prev_img,
-        const cv::Mat& next_img);
+        Frame& next_frame,
+        const Frame& prev_frame,
+        const Camera& cam);
     
+    // Undistort points while retaining the existing camera matrix
     std::vector<cv::Point2f>
     undistortPoints(
         const std::vector<cv::Point2f>& pts,
@@ -70,7 +111,23 @@ public:
 
 private:
     uint64_t id_counter_;
+    FeatureTrackerParams params_;
 
+    void
+    detectFeaturesMask_(
+        Frame& f,
+        const Camera& cam);
+    
+    void
+    detectFeaturesNoMask_(
+        Frame& f,
+        const Camera& cam);
+
+    cv::Mat
+    buildMask_(
+        const cv::Mat& img,
+        const std::vector<cv::Point2f>& pts,
+        const int radius);
 };
 
 } // namespace mft

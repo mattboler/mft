@@ -7,23 +7,22 @@
 namespace mft {
 
 template <typename T>
-std::vector<T> 
+void
 filterByMask(
-    const std::vector<T>& vec,
+    std::vector<T>& vec,
     const std::vector<uchar>& mask)
 {
-    std::vector<T> out_vec;
-    out_vec.reserve(vec.size());
+    int j = 0;
 
     for (size_t i = 0; i < vec.size(); ++i) {
         if (mask.at(i)) {
-            out_vec.push_back(vec.at(i));
+            vec[j++] = vec[i];
         }
     }
 
-    return out_vec;
+    vec.resize(j);
 }
 
-}
+} // namespace mft
 
 #endif
