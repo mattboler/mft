@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <yaml-cpp/yaml.h>
 
-#include "MFT/utils.hpp"
+#include "mft/utils.hpp"
 
 namespace mft {
 
@@ -16,19 +16,30 @@ namespace mft {
      */
 
 struct FeatureTrackerParams {
-    int num_features = 200;
+    // --- High-level parameters ---
+    // How many feature are tracked at once?
+    int num_features = 200; 
+    // Enhance contrast before using images
+    bool use_clahe = false; 
     
-    // Detection params
+    // --- Detection params ---
+    // FAST threshold first attempt
     int init_fast_threshold = 15;
+    // FAST threshold to use if too few points are found
     int min_fast_threshold = 5;
+    // Force points to be this far apart (pix)
     int minimum_distance = 25;
 
-    // Tracking params
+    // --- Tracking params ---
+    // KLT window size
     int window_size = 7;
+    // KLT pyramid levels
     int num_levels = 3;
 
-    // Ransac params
+    // --- Ransac params ---
+    // Distance to be considered an outlier
     double ransac_pix_threshold = 1.0;
+    // Confidence level of model fit
     double ransac_confidence = 0.999;
 };
 
@@ -46,6 +57,8 @@ struct Camera {
     int height;
 };
 
+Camera buildCamera(std::string config_path);
+
 struct Frame {
     cv::Mat img;
     std::vector<uint64_t> ids;
@@ -58,7 +71,9 @@ struct Frame {
 class FeatureTracker {
 public:
     FeatureTracker();
-    FeatureTracker(std::string path_to_config);
+    FeatureTracker(
+        std::string path_to_config,
+        Camera cam);
 
     /**
      * If no previous frames to track features from, build a frame and 
@@ -69,8 +84,7 @@ public:
      */ 
     Frame
     buildFirstFrame(
-        const cv::Mat& img,
-        const Camera& cam);
+        const cv::Mat& img);
 
     /**
      * If a previous frame exists, track features from it then detect more
@@ -81,7 +95,6 @@ public:
      */ 
     Frame buildNextFrame(
         const cv::Mat& img,
-        const Camera& cam,
         const Frame& prev_frame);
 
     /**
@@ -90,8 +103,7 @@ public:
      */ 
     void
     extractFeatures(
-        Frame& f,
-        const Camera& cam);
+        Frame& f);
 
     /**
      * Input: New frame with only img field populated
@@ -100,33 +112,29 @@ public:
     void
     trackFeatures(
         Frame& next_frame,
-        const Frame& prev_frame,
-        const Camera& cam);
+        const Frame& prev_frame);
     
     // Undistort points while retaining the existing camera matrix
     std::vector<cv::Point2f>
     undistortPoints(
-        const std::vector<cv::Point2f>& pts,
-        const Camera& cam);
+        const std::vector<cv::Point2f>& pts);
     // Undistort points and reframe with identity camera matrix
     std::vector<cv::Point2f>
     undistortAndNormalizePoints(
-        const std::vector<cv::Point2f>& pts,
-        const Camera& cam);
+        const std::vector<cv::Point2f>& pts);
 
 private:
     uint64_t id_counter_;
     FeatureTrackerParams params_;
+    Camera cam_;
 
     void
     detectFeaturesMask_(
-        Frame& f,
-        const Camera& cam);
+        Frame& f);
     
     void
     detectFeaturesNoMask_(
-        Frame& f,
-        const Camera& cam);
+        Frame& f);
 
     cv::Mat
     buildMask_(

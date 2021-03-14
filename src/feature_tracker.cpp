@@ -1,23 +1,31 @@
-#include "MFT/feature_tracker.hpp"
+#include "mft/feature_tracker.hpp"
 
 namespace mft {
 
+FeatureTracker::FeatureTracker(
+    std::string config_path,
+    Camera cam)
+{
+    // load config
+
+    // set cam
+    this->cam_ = cam;
+}
+
 Frame
 FeatureTracker::buildFirstFrame(
-    const cv::Mat& img,
-    const Camera& cam)
+    const cv::Mat& img)
 {
     auto f = Frame();
     f.img = img;
 
-    extractFeatures(f, cam);
+    extractFeatures(f);
 
     return f;
 }
 
 Frame FeatureTracker::buildNextFrame(
     const cv::Mat& img,
-    const Camera& cam,
     const Frame& prev_frame)
 {
     auto f = Frame();
@@ -27,20 +35,18 @@ Frame FeatureTracker::buildNextFrame(
     // Update ages, fill in velocities etc
     trackFeatures(
         f,
-        prev_frame,
-        cam);
+        prev_frame);
     
     // Detect new features
     // Assign new features ids, ages, etc
-    extractFeatures(f, cam);
+    extractFeatures(f);
 
     return f;
 }
 
 void
 FeatureTracker::extractFeatures(
-    Frame& f,
-    const Camera& cam)
+    Frame& f)
 {   
     /**
      * 1. Extract features
@@ -49,16 +55,15 @@ FeatureTracker::extractFeatures(
      */
 
     if (f.points.size() != 0) { // Need to mask off previous points
-        detectFeaturesMask_(f, cam);
+        detectFeaturesMask_(f);
     } else {
-        detectFeaturesNoMask_(f, cam);
+        detectFeaturesNoMask_(f);
     }
 }
 
 void
 FeatureTracker::detectFeaturesMask_(
-    Frame& f,
-    const Camera& cam)
+    Frame& f)
 {
     std::vector<cv::Point2f> new_points;
 
@@ -77,9 +82,7 @@ FeatureTracker::detectFeaturesMask_(
         this->params_.minimum_distance,
         mask);
     // undistort features
-    auto new_points_und = undistortPoints(
-        new_points,
-        cam);
+    auto new_points_und = undistortAndNormalizePoints(new_points);
     
     // assign ids
     std::vector<uint64_t> new_ids;
@@ -120,8 +123,7 @@ buildMask_(
 
 void
 FeatureTracker::detectFeaturesNoMask_(
-    Frame& f,
-    const Camera& cam)
+    Frame& f)
 {
     std::vector<cv::Point2f> new_points;
     
@@ -134,9 +136,7 @@ FeatureTracker::detectFeaturesNoMask_(
         0.01,
         this->params_.minimum_distance);
     // undistort features
-    auto new_points_und = undistortPoints(
-        new_points,
-        cam);
+    auto new_points_und = undistortAndNormalizePoints(new_points);
     
     // assign ids
     std::vector<uint64_t> new_ids;
@@ -164,8 +164,7 @@ FeatureTracker::detectFeaturesNoMask_(
 void
 FeatureTracker::trackFeatures(
     Frame& next_frame,
-    const Frame& prev_frame,
-    const Camera& cam)
+    const Frame& prev_frame)
 {
     std::vector<cv::Point2f> new_points;
     std::vector<uchar> status;
@@ -194,9 +193,6 @@ FeatureTracker::trackFeatures(
     auto prev_points = prev_frame.points;
     filterByMask(prev_points, status);
 
-    auto prev_points_und = prev_frame.points_und;
-    filterByMask(prev_points_und, status);
-
     auto ages = prev_frame.ages;
     filterByMask(ages, status);
     for (int i = 0; i < ages.size(); ++i) {
@@ -209,7 +205,9 @@ FeatureTracker::trackFeatures(
     }
 
     filterByMask(new_points, status);
-    auto new_points_und = undistortPoints(new_points, cam);
+    // Use pixel coordinates for ransac so pix_thresh makes sense
+    auto new_points_und = undistortPoints(new_points);
+    auto prev_points_und = undistortPoints(prev_points);
 
     // Reject more outliers with FMAT
     status.clear();
@@ -231,41 +229,39 @@ FeatureTracker::trackFeatures(
     // Assemble frame
     next_frame.ids = ids;
     next_frame.points = new_points;
-    next_frame.points_und = new_points_und;
+    next_frame.points_und = undistortAndNormalizePoints(new_points);
     next_frame.ages = ages;
     next_frame.velocities = new_velocities;
 }
 
 std::vector<cv::Point2f>
-undistortPoints(
-    const std::vector<cv::Point2f>& pts,
-    const Camera& cam)
+FeatureTracker::undistortPoints(
+    const std::vector<cv::Point2f>& pts)
 {
     std::vector<cv::Point2f> out_vec;
 
     cv::undistortPoints(
         pts,
         out_vec,
-        cam.K,
-        cam.D,
+        cam_.K,
+        cam_.D,
         cv::noArray(),
-        cam.K);
+        cam_.K);
     
     return out_vec;
 }
 
 std::vector<cv::Point2f>
-undistortAndNormalizePoints(
-    const std::vector<cv::Point2f>& pts,
-    const Camera& cam)
+FeatureTracker::undistortAndNormalizePoints(
+    const std::vector<cv::Point2f>& pts)
 {
     std::vector<cv::Point2f> out_vec;
 
     cv::undistortPoints(
         pts,
         out_vec,
-        cam.K,
-        cam.D);
+        cam_.K,
+        cam_.D);
 }
 
 } // namespace mft
