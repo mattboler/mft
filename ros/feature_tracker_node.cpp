@@ -86,6 +86,8 @@ void FeatureTrackerNode::imageCallback(
 
     auto feature_msg = buildFeatureMsg(f, header);
     feature_pub_.publish(feature_msg);
+
+    prev_frame_ = f;
 }
 
 }
