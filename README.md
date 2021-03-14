@@ -1,2 +1,3 @@
 # MFT
-Simple feature tracking system for visual and visual-inertial systems
+
+A minimal feature tracker for visual or visual-inertial systems
