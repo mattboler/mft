@@ -279,7 +279,8 @@ FeatureTracker::trackFeatures_(
        err,
        cv::Size(params_.window_size, params_.window_size),
        params_.num_levels);
-    // Filter out points that moved too muchb
+
+    // Filter out points that moved too much
     for (int i = 0; i < new_points.size(); ++i) {
         if(pyrlk_status[i] && cv::norm(new_points[i] - prev_frame.points[i]) > 25) {
             pyrlk_status[i] = 0;
@@ -291,6 +292,13 @@ FeatureTracker::trackFeatures_(
     filterByMask(prev_points, pyrlk_status);
     filterByMask(new_points, pyrlk_status);
     filterByMask(ages, pyrlk_status);
+    
+    if (ids.size() < 8) { // Need at least 8 points to estimate FMAT
+    /**
+     * TODO: Return here with "empty" frame instead of erroring out 
+     */
+        throw "Too few points for ransac!";
+    }
 
     // Increment ages while we're at it
     for (int i = 0; i < ages.size(); ++i) {
@@ -316,12 +324,11 @@ FeatureTracker::trackFeatures_(
         this->params_.ransac_pix_threshold,
         this->params_.ransac_confidence,
         fmat_status);
-    
+
     filterByMask(ids, fmat_status);
     filterByMask(new_points, fmat_status);
     filterByMask(ages, fmat_status);
     filterByMask(new_velocities, fmat_status);
-
 
     // Assemble frame
     next_frame.ids = ids;
