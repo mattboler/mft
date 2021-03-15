@@ -98,8 +98,6 @@ void FeatureTrackerNode::imageCallback(
         f = tracker_.buildNextFrame(img, prev_frame_);
     }
 
-    std::cout << "N features: " << f.ids.size() << std::endl;
-
     sensor_msgs::PointCloudPtr feature_msg = buildFeatureMsg(f, header);
     feature_pub_.publish(feature_msg);
 
