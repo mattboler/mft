@@ -32,7 +32,7 @@ filterByMaskBatch(
     // Check all vectors are the same length
     size_t size = mask.size();
     for (auto& v : vecs) {
-        if v.size() != size {
+        if (v.size() != size) {
             throw "Vectors are not the same length!";
         } else {
             filterByMask(v, mask);
