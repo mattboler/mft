@@ -1,0 +1,11 @@
+num_features: 200
+use_clahe: false
+
+minimum_distance: 15
+use_subpix: false
+
+window_size: 7
+num_levels: 3
+
+ransac_pix_threshold: 1.0
+ransac_confidence: 0.999

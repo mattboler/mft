@@ -26,7 +26,6 @@ void FeatureTrackerNode::init()
     std::string tracker_path;
     this->nh_.getParam("tracker_path", tracker_path);
     ROS_INFO("Tracker path: %s", tracker_path.c_str());
-
     
     this->tracker_ = FeatureTracker(tracker_path, cam);
 }

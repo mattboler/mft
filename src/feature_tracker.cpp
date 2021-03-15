@@ -2,12 +2,61 @@
 
 namespace mft {
 
+FeatureTrackerParams buildTrackerParams(std::string path)
+{
+    FeatureTrackerParams p;
+
+    auto n = YAML::LoadFile(path);
+
+    p.num_features = n["num_features"].as<double>();
+    p.use_clahe = n["use_clahe"].as<bool>();
+    p.minimum_distance = n["minimum_distance"].as<size_t>();
+    p.use_subpix = n["use_subpix"].as<bool>();
+    p.window_size = n["window_size"].as<size_t>();
+    p.num_levels = n["num_levels"].as<size_t>();
+    p.ransac_pix_threshold = n["ransac_pix_threshold"].as<double>();
+    p.ransac_confidence = n["ransac_confidence"].as<double>();
+
+    return p;
+}
+
+Camera buildCamera(std::string path) 
+{
+    Camera c;
+    
+    auto n = YAML::LoadFile(path);
+
+    auto s = n["size"];
+    c.width = s["width"].as<size_t>();
+    c.height = s["height"].as<size_t>();
+
+    auto i = n["intrinsics"];
+    c.fx = i["fx"].as<double>();
+    c.fy = i["fy"].as<double>();
+    c.cx = i["cx"].as<double>();
+    c.cy = i["cy"].as<double>();
+    c.K = (cv::Mat1d(3, 3) <<
+        c.fx, 0, c.cx,
+        0, c.fy, c.cy,
+        0, 0, 1);
+
+    auto d = n["distortion"];
+    c.D = (cv::Mat1d(1, 5) << 
+        d["k1"].as<double>(),
+        d["k2"].as<double>(),
+        d["p1"].as<double>(),
+        d["p2"].as<double>(),
+        d["k3"].as<double>());
+    
+    return c;
+}
+
 FeatureTracker::FeatureTracker(
-    std::string config_path,
+    FeatureTrackerParams params,
     Camera cam)
 {
-    // load config
-
+    // set params
+    this->params_ = params;
     // set cam
     this->cam_ = cam;
 }
@@ -19,6 +68,11 @@ FeatureTracker::buildFirstFrame(
     auto f = Frame();
     f.img = img;
 
+    if (params_.use_clahe) {
+        auto clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
+        clahe->apply(f.img, f.img);
+    }
+    
     extractFeatures(f);
 
     return f;
@@ -30,6 +84,11 @@ Frame FeatureTracker::buildNextFrame(
 {
     auto f = Frame();
     f.img = img;
+
+    if (params_.use_clahe) {
+        auto clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
+        clahe->apply(f.img, f.img);
+    }
 
     // Track previous features if possible
     // Update ages, fill in velocities etc

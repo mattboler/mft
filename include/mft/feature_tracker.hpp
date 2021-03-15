@@ -23,12 +23,10 @@ struct FeatureTrackerParams {
     bool use_clahe = false; 
     
     // --- Detection params ---
-    // FAST threshold first attempt
-    int init_fast_threshold = 15;
-    // FAST threshold to use if too few points are found
-    int min_fast_threshold = 5;
     // Force points to be this far apart (pix)
-    int minimum_distance = 25;
+    int minimum_distance = 15;
+    // Do we perform subpixel optimization?
+    bool use_subpix = false;
 
     // --- Tracking params ---
     // KLT window size
@@ -43,6 +41,8 @@ struct FeatureTrackerParams {
     double ransac_confidence = 0.999;
 };
 
+FeatureTrackerParams buildTrackerParams(std::string config_path);
+
 struct Camera {
     cv::Mat K;
     cv::Mat D;
@@ -53,8 +53,8 @@ struct Camera {
     double cx;
     double cy;
 
-    int width;
-    int height;
+    size_t width;
+    size_t height;
 };
 
 Camera buildCamera(std::string config_path);
@@ -72,7 +72,7 @@ class FeatureTracker {
 public:
     FeatureTracker();
     FeatureTracker(
-        std::string path_to_config,
+        FeatureTrackerParams params,
         Camera cam);
 
     /**
