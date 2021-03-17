@@ -49,7 +49,6 @@ FeatureTrackerNode::buildFeatureMsg(
 
     for(size_t i = 0; i < f.ids.size(); ++i) {
         auto point_id = f.ids[i];
-        auto point_age = f.ages[i];
         auto point_coords = f.points_und[i];
 
         geometry_msgs::Point32 p;
@@ -59,13 +58,11 @@ FeatureTrackerNode::buildFeatureMsg(
 
         features->points.push_back(p);
         id.values.push_back(point_id);
-        age.values.push_back(point_age);
         u.values.push_back(p.x);
         v.values.push_back(p.y);
     }
 
     features->channels.push_back(id);
-    features->channels.push_back(age);
     features->channels.push_back(u);
     features->channels.push_back(v);
 
