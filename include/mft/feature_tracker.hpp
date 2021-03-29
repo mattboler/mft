@@ -8,6 +8,8 @@
 
 #include "mft/utils.hpp"
 
+#include "mft/common/camera.hpp"
+
 namespace mft {
 
     /**
@@ -43,21 +45,7 @@ struct FeatureTrackerParams {
 
 FeatureTrackerParams buildTrackerParams(std::string config_path);
 
-struct Camera {
-    cv::Mat K;
-    cv::Mat D;
 
-    double fx;
-    double fy;
-
-    double cx;
-    double cy;
-
-    size_t width;
-    size_t height;
-};
-
-Camera buildCamera(std::string config_path);
 
 struct Frame {
     cv::Mat img;
