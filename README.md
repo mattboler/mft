@@ -26,8 +26,6 @@ a ```sensor_msgs::PointCloud``` where the channels are as follows:
 
 ## Citations
 
-Heavy inspiration drawn from:
-
 ### VILIB
 [uzh-rpg/vilib](https://github.com/uzh-rpg/vilib)
 
