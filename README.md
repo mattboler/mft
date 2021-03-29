@@ -39,6 +39,16 @@ a ```sensor_msgs::PointCloud``` where the channels are as follows:
 ### MSCKF-MONO
 [daniilidis-group/msckf_mono](https://github.com/daniilidis-group/msckf_mono)
 
+@INPROCEEDINGS{8100099,
+  author={A. Z. {Zhu} and N. {Atanasov} and K. {Daniilidis}},
+  booktitle={2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, 
+  title={Event-Based Visual Inertial Odometry}, 
+  year={2017},
+  volume={},
+  number={},
+  pages={5816-5824},
+  doi={10.1109/CVPR.2017.616}}
+
 ### VINS-MONO
 [HKUST-Aerial-Robotics/vins_mono](https://github.com/HKUST-Aerial-Robotics/VINS-Mono)
 
